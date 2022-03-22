@@ -5,12 +5,9 @@ export const useAuthentication = () => {
   const queryClient = useQueryClient();
 
   const logInMutation = useMutation(logIn, {
-    onSuccess: () => {
-      queryClient.setQueryData(['user_authentication'], {
-        id: '9221745b-a560-5a06-bcc2-d224011cb772',
-        firstName: 'Tai',
-        lastName: 'Nguyen',
-      });
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.data.token);
+      queryClient.setQueryData(['user_authentication'], data.data.user);
     },
   });
 
