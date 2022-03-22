@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useAuthentication } from '@/queries/index';
 import { axiosInstance } from '@/services/axiosInstance';
 import {
@@ -157,7 +158,7 @@ const Home: NextPage = () => {
               return String(response.data.captureId);
             }}
             onApprove={(_, actions) => {
-              return actions.order.capture().then((details) => {
+              return (actions as any).order.capture().then((details) => {
                 const name = details.payer.name.given_name;
                 alert(`Transaction completed by ${name}`);
               });
