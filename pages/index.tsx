@@ -7,6 +7,7 @@ import {
   Grid,
   MenuItem,
   Select,
+  Switch,
   TextareaAutosize,
   TextField,
   Typography,
@@ -39,6 +40,7 @@ const Home: NextPage = () => {
   const [fundingSource, setFundingSource] = React.useState<FundingSource>(
     FundingSource.PAYPAL,
   );
+  const [shouldRender, setShouldRender] = React.useState<boolean>(false);
 
   return (
     <>
@@ -48,7 +50,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Grid container p={2}>
-        <Grid xs={4}>
+        <Grid item xs={4}>
           <TextField
             label="Email"
             value={email}
@@ -61,7 +63,7 @@ const Home: NextPage = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Grid>
-        <Grid xs={8}>
+        <Grid item xs={8}>
           <TextareaAutosize
             disabled
             value={JSON.stringify(user, null, 2)}
@@ -128,44 +130,55 @@ const Home: NextPage = () => {
             </MenuItem>
           ))}
         </Select>
+        <Switch
+          checked={shouldRender}
+          onChange={() => setShouldRender((x) => !x)}
+        />
       </Box>
 
-      <Box p={2}>
-        <PayPalScriptProvider
-          options={{
-            'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
-            currency,
-          }}
-        >
-          <PayPalButtons
-            fundingSource={fundingSource}
-            onCancel={() =>
-              axiosInstance.post('/deposit/fiat/cancel-payment', { paymentId })
-            }
-            onError={() =>
-              axiosInstance.post('/deposit/fiat/cancel-payment', { paymentId })
-            }
-            createOrder={async (_, actions) => {
-              const response = await axiosInstance.post(
-                '/deposit/fiat/create-payment',
-                {
-                  amount,
-                  currency,
-                  fundingSource,
-                },
-              );
-              setPaymentId(response.data.paymentId);
-              return String(response.data.captureId);
+      {shouldRender && (
+        <Box p={2}>
+          <PayPalScriptProvider
+            options={{
+              'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+              currency,
             }}
-            onApprove={(_, actions) => {
-              return (actions as any).order.capture().then((details) => {
-                const name = details.payer.name.given_name;
-                alert(`Transaction completed by ${name}`);
-              });
-            }}
-          />
-        </PayPalScriptProvider>
-      </Box>
+          >
+            <PayPalButtons
+              fundingSource={fundingSource}
+              // forceReRender={[paymentId, amount, currency, fundingSource]}
+              onCancel={() =>
+                axiosInstance.put('/deposit/fiat/cancel-payment', {
+                  paymentId,
+                })
+              }
+              onError={() =>
+                axiosInstance.put('/deposit/fiat/cancel-payment', {
+                  paymentId,
+                })
+              }
+              createOrder={async (_, actions) => {
+                const response = await axiosInstance.post(
+                  '/deposit/fiat/create-payment',
+                  {
+                    amount,
+                    currency,
+                    fundingSource,
+                  },
+                );
+                setPaymentId(response.data.paymentId);
+                return String(response.data.captureId);
+              }}
+              onApprove={(_, actions) => {
+                return (actions as any).order.capture().then((details) => {
+                  const name = details.payer.name.given_name;
+                  alert(`Transaction completed by ${name}`);
+                });
+              }}
+            />
+          </PayPalScriptProvider>
+        </Box>
+      )}
     </>
   );
 };
